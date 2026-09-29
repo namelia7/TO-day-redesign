@@ -24,9 +24,6 @@ function PublicOnly({ children }) {
 function App() {
   return (
     <div className="app-root">
-      <div className="bubbles" aria-hidden="true">
-        <span className="bubble b1" /><span className="bubble b2" /><span className="bubble b3" /><span className="bubble b4" /><span className="bubble b5" />
-      </div>
       <Header />
 
       <main className="site-main">

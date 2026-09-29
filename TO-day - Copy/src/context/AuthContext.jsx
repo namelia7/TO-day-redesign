@@ -19,6 +19,16 @@ export function AuthProvider({ children }) {
     } catch (e) {}
   }, [user])
 
+  const [result, setResultState] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('tod_result')) } catch (e) { return null }
+  })
+  const saveResult = (r) => {
+    setResultState(r)
+    try { localStorage.setItem('tod_result', JSON.stringify(r)) } catch (e) {}
+  }
+  const updateUser = (patch) => setUser(u => ({ ...u, ...patch }))
+  const upgrade = () => setUser(u => ({ ...u, isPremium: true }))
+
   const login = (values) => {
     // demo: accept only demo account credentials
     const demoEmail = 'johndoe@gmail.com'
@@ -57,7 +67,7 @@ export function AuthProvider({ children }) {
   const logout = () => setUser(null)
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, setUser }}>
+    <AuthContext.Provider value={{ user, login, register, logout, setUser, result, saveResult, updateUser, upgrade }}>
       {children}
     </AuthContext.Provider>
   )

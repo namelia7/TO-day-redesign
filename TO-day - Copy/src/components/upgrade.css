@@ -1,3 +1,14 @@
-.upgrade-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:60 }
-.upgrade-modal { width:420px; padding:18px }
-.modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:12px }
+.upgrade-backdrop { position: fixed; inset: 0; background: rgba(35, 30, 60, 0.45); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 60; padding: 20px; }
+.upgrade-modal {
+  width: min(100%, 420px); padding: 30px 28px; border-radius: 26px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(246,244,255,0.9));
+  border: 1px solid var(--line); box-shadow: var(--shadow);
+}
+.upgrade-modal h3 { font-size: 1.3rem; margin-bottom: 8px; }
+.upgrade-modal p { color: var(--muted); font-size: 14.5px; }
+.upgrade-price { font-size: 2rem; font-weight: 800; margin: 14px 0; color: var(--primary-dark); }
+.upgrade-price small { font-size: 0.95rem; font-weight: 500; color: var(--muted); }
+.method-list { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.method { padding: 9px 16px; border-radius: 12px; border: 1px solid var(--field-border); background: var(--field); cursor: pointer; font-weight: 600; font-size: 14px; }
+.method.on { background: var(--primary); color: #fff; border-color: transparent; }
+.upgrade-note { font-size: 12.5px; font-style: italic; }
