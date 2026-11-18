@@ -166,7 +166,7 @@ export default function Profile() {
               </p>
             ) : (
               <>
-                <p className="hint">Upgrade Rp 19.000 per bulan untuk membuka semua fitur.</p>
+                <p className="hint">Upgrade Rp 40.000 per bulan untuk membuka semua fitur.</p>
                 <button className="btn btn-primary" onClick={() => setModal(true)}>Upgrade ke Premium</button>
               </>
             )}

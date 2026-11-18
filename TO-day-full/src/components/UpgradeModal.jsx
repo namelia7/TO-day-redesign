@@ -9,7 +9,7 @@ import { apiErrorMessage } from '../api/client'
 import { loadSnap } from '../lib/snap'
 import './upgrade.css'
 
-const FALLBACK_PRICE = 19000
+const FALLBACK_PRICE = 40000
 
 function formatRupiah(value) {
   return `Rp ${Number(value).toLocaleString('id-ID')}`

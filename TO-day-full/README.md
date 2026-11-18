@@ -90,7 +90,7 @@ Ganti juga `ADMIN_TOKEN`/`JWT_SECRET` jika nilai demo pernah dibagikan.
 1. Pembeli klik Upgrade → **Buat Order & Minta QRIS**.
 2. Server membuat order `TO-M-<id>` berstatus `pending` dan mengembalikan link
    `wa.me` dengan pesan berisi order ID, nama, email.
-3. Admin mengirim gambar QRIS di chat WhatsApp; pembeli membayar Rp 19.000 dan
+3. Admin mengirim gambar QRIS di chat WhatsApp; pembeli membayar Rp 40.000 dan
    mengirim bukti transfer ke chat yang sama.
 4. Admin login (akun `admin@today.demo`) lalu membuka `/admin` dan klik
    **Setujui**. Premium aktif 1 bulan; status `paid` hanya bisa diubah lewat
@@ -122,9 +122,9 @@ meski Midtrans belum aktif.
 
 ## Yang MASIH perlu kamu lengkapi sendiri sebelum dipakai sungguhan
 
-1. **Bank soal masih terbatas (26 soal bergaya UTBK)** — soal di database ini
+1. **Bank soal masih terbatas (140 soal bergaya UTBK)** — soal di database ini
    adalah latihan, bukan soal UTBK resmi. Tambahkan lewat
-   `server/src/db/seed.js` atau bangun panel admin terpisah.
+   `server/src/db/seed-data.js` atau bangun panel admin terpisah.
 2. **"Tanya AI" masih balasan template** — bukan panggilan model AI sungguhan.
    Untuk menyambungkannya, tambahkan endpoint backend yang memanggil API AI
    dengan key milikmu (jangan pernah dari frontend).

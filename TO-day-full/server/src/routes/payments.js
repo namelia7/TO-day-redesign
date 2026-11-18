@@ -9,7 +9,7 @@ const router = Router()
 
 const asyncHandler = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next)
 
-const PRICE = 19000 // Rp per bulan
+const PRICE = 40000 // Rp per bulan
 const METHODS = ['QRIS', 'GoPay', 'Virtual Account', 'Kartu Kredit/Debit']
 const MANUAL_METHOD = 'QRIS (WhatsApp)'
 

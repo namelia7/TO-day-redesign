@@ -213,6 +213,20 @@ label { display: block; font-weight: 600; font-size: 14px; margin: 14px 0 6px; }
 .admin-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 .admin-empty { color: var(--muted); text-align: center; padding: 24px 0; }
 
+/* Editor bank soal */
+.q-toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.q-toolbar select, .q-toolbar input { width: auto; }
+.q-toolbar .q-search { flex: 1 1 220px; min-width: 180px; }
+.q-editor { margin-bottom: 20px; }
+.q-form textarea { resize: vertical; }
+.q-choices { display: grid; gap: 10px; margin-top: 6px; }
+.q-label { font-weight: 600; font-size: 14px; margin-top: 14px; }
+.q-choice-row { display: flex; align-items: center; gap: 10px; }
+.q-choice-row input[type='radio'] { width: auto; flex: none; accent-color: var(--primary); }
+.q-choice-row input[type='text'] { flex: 1; min-width: 120px; }
+.q-choice-key { width: 20px; flex: none; font-weight: 700; color: var(--primary-dark); }
+.q-stem-cell { max-width: 520px; }
+
 /* Tabs */
 .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
 .tab { padding: 9px 16px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,0.65); color: var(--muted); cursor: pointer; font-weight: 600; }
@@ -318,4 +332,6 @@ label { display: block; font-weight: 600; font-size: 14px; margin: 14px 0 6px; }
 @media (max-width: 640px) {
   .cbt-top { position: static; }
   .palette { grid-template-columns: repeat(6, 1fr); }
+  .q-choice-row { flex-wrap: wrap; }
+  .q-stem-cell { max-width: none; }
 }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { approvePayment, getAdminPayments, rejectPayment } from '../api/payments'
 import { apiErrorMessage } from '../api/client'
+import AdminQuestions from '../components/AdminQuestions'
 import { useAuth } from '../context/useAuth'
 import './pages.css'
 
@@ -25,6 +26,7 @@ export default function Admin() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [notes, setNotes] = useState({})
+  const [view, setView] = useState('payments')
 
   const isAdmin = !!user?.isAdmin
 
@@ -126,11 +128,38 @@ export default function Admin() {
   return (
     <div className="admin-wrap">
       <div className="page-head">
-        <h1>Verifikasi Pembayaran</h1>
-        <p>Setujui hanya setelah dana QRIS benar-benar masuk. Login sebagai {user.email}.</p>
+        <h1>{view === 'payments' ? 'Verifikasi Pembayaran' : 'Kelola Bank Soal'}</h1>
+        <p>
+          {view === 'payments'
+            ? 'Setujui hanya setelah dana QRIS benar-benar masuk.'
+            : 'Ubah teks soal, pilihan jawaban, kunci, dan pembahasan.'}
+          {' '}Login sebagai {user.email}.
+        </p>
       </div>
 
-      <div className="glass-card panel">
+      <div className="admin-toolbar">
+        <div className="tabs" style={{ margin: 0 }}>
+          <button
+            type="button"
+            className={`tab ${view === 'payments' ? 'on' : ''}`}
+            onClick={() => setView('payments')}
+          >
+            Pembayaran
+          </button>
+          <button
+            type="button"
+            className={`tab ${view === 'questions' ? 'on' : ''}`}
+            onClick={() => setView('questions')}
+          >
+            Bank Soal
+          </button>
+        </div>
+        <button className="btn btn-glass" onClick={logout}>Keluar admin</button>
+      </div>
+
+      {view === 'questions' && <AdminQuestions />}
+
+      {view === 'payments' && <div className="glass-card panel">
         <div className="admin-toolbar">
           <div className="tabs" style={{ margin: 0 }}>
             {['pending', 'paid', 'failed'].map(s => (
@@ -148,7 +177,6 @@ export default function Admin() {
             <button className="btn btn-glass" onClick={() => load(status)} disabled={loading}>
               {loading ? 'Memuat...' : 'Muat ulang'}
             </button>
-            <button className="btn btn-glass" onClick={logout}>Keluar admin</button>
           </div>
         </div>
 
@@ -223,7 +251,8 @@ export default function Admin() {
             </table>
           </div>
         )}
-      </div>
+        </div>
+      }
     </div>
   )
 }

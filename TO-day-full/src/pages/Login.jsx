@@ -21,11 +21,6 @@ export default function Login() {
   const [submitting, setSubmitting] = useState(false)
   const { login } = useAuth()
   const nav = useNavigate()
-  const demoAccounts = [
-    { label: 'Admin (@admin)', email: 'admin@today.demo', password: 'admin1234' },
-    { label: 'Premium (@premium)', email: 'premium@today.demo', password: 'premium1234' },
-    { label: 'Belum premium (@siswa)', email: 'siswa@today.demo', password: 'siswa1234' },
-  ]
 
   const submit = async (e) => {
     e.preventDefault()
@@ -64,20 +59,6 @@ export default function Login() {
           </button>
         </form>
         <p className="switch">Belum punya akun? <Link to="/register">Register</Link></p>
-      </div>
-
-      <div className="demo-accounts">
-        <span>Akun demo (ketuk untuk mengisi):</span>
-        {demoAccounts.map(account => (
-          <button
-            key={account.email}
-            type="button"
-            className="demo-hint"
-            onClick={() => { setEmail(account.email); setPassword(account.password) }}
-          >
-            {account.label}: {account.email} / {account.password}
-          </button>
-        ))}
       </div>
     </div>
   )

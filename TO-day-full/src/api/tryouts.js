@@ -2,9 +2,12 @@ import api from './client'
 
 export const SUBTESTS = {
   PU: 'Penalaran Umum',
+  PK: 'Pengetahuan Kuantitatif',
   PM: 'Penalaran Matematika',
   BIND: 'Bahasa Indonesia',
   BING: 'Bahasa Inggris',
+  PPU: 'Pengetahuan dan Pemahaman Umum',
+  PBM: 'Pemahaman Bacaan dan Menulis',
 }
 
 export async function listTryouts() {

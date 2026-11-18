@@ -87,7 +87,7 @@ export default function Landing() {
           <article className="glass-card pack pack-premium">
             <span className="pack-badge">Paling banyak dipilih</span>
             <h3>Premium</h3>
-            <div className="price">Rp 19.000 <small>/ bulan</small></div>
+            <div className="price">Rp 40.000 <small>/ bulan</small></div>
             <ul>{PREMIUM.map(i => <li key={i}>{i}</li>)}</ul>
             <Link to="/register" className="btn btn-primary btn-block">Coba Premium</Link>
           </article>
