@@ -10,10 +10,10 @@ const asyncHandler = fn => (req, res, next) => Promise.resolve(fn(req, res, next
 // mereka (data nyata dari tabel attempts, bukan data hardcoded).
 router.get('/', requireAuth, asyncHandler(async (req, res) => {
   const result = await pool.query(`
-    SELECT u.id as user_id, u.name, MAX(a.score) as best_score
+    SELECT u.id as user_id, u.username, u.name, MAX(a.score) as best_score
     FROM attempts a
     JOIN users u ON u.id = a.user_id
-    GROUP BY u.id
+    GROUP BY u.id, u.username, u.name
     ORDER BY best_score DESC
   `)
 
@@ -22,6 +22,8 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
 
   const board = result.rows.map((r, i) => ({
     rank: i + 1,
+    user_id: r.user_id,
+    username: r.username || `user${r.user_id}`,
     name: r.name,
     score: r.best_score,
     me: r.user_id === req.userId,

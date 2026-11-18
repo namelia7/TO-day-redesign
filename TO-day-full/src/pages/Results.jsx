@@ -147,9 +147,9 @@ export default function Results() {
       <section className="glass-card panel">
         <ol className="board">
           {board.board.map(b => (
-            <li key={`${b.rank}-${b.name}`} className={b.me ? 'me' : ''}>
+            <li key={b.user_id ?? `${b.rank}-${b.username}`} className={b.me ? 'me' : ''}>
               <span className="rank">{b.rank}</span>
-              <span className="who">{b.me ? `${b.name} (kamu)` : b.name}</span>
+              <span className="who" title={b.name}>{b.me ? `@${b.username} (kamu)` : `@${b.username}`}</span>
               <strong>{b.score}</strong>
             </li>
           ))}

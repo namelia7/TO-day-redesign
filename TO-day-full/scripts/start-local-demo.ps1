@@ -303,9 +303,9 @@ try {
   Write-Host "Tunnel publik : $tunnelUrl"
   Write-Host ''
   Write-Host 'Akun demo (dibuat/di-reset oleh seed):' -ForegroundColor Yellow
-  Write-Host '  Admin          : admin@today.demo / admin1234'
-  Write-Host '  Premium        : premium@today.demo / premium1234'
-  Write-Host '  Belum premium  : siswa@today.demo / siswa1234'
+  Write-Host '  Admin          : @admin   | admin@today.demo / admin1234'
+  Write-Host '  Premium        : @premium | premium@today.demo / premium1234 (12 riwayat tryout)'
+  Write-Host '  Belum premium  : @siswa   | siswa@today.demo / siswa1234'
   Write-Host ''
   Write-Host 'Set di Vercel (Production), lalu Redeploy:' -ForegroundColor Yellow
   Write-Host "  VITE_API_URL=$tunnelUrl/api"

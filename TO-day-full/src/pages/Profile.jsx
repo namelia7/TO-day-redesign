@@ -104,6 +104,7 @@ export default function Profile() {
     <div className="page-wrap">
       <div className="page-head">
         <h1>Halo, {user.name}</h1>
+        <p className="hint">Username leaderboard: <strong>@{user.username || user.name}</strong></p>
         <p>Atur tujuanmu supaya statistik bisa membandingkan skormu dengan passing grade.</p>
       </div>
 

@@ -42,7 +42,9 @@ export default function Header() {
         <div className="auth-links">
           {user ? (
             <>
-              <Link to="/profile" className="profile-pill">{user.name}</Link>
+              <Link to="/profile" className="profile-pill" title={user.name}>
+                @{user.username || user.name}
+              </Link>
               <button className="btn btn-ghost" onClick={logout}>Keluar</button>
             </>
           ) : (

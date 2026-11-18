@@ -22,9 +22,9 @@ export default function Login() {
   const { login } = useAuth()
   const nav = useNavigate()
   const demoAccounts = [
-    { label: 'Admin', email: 'admin@today.demo', password: 'admin1234' },
-    { label: 'Premium', email: 'premium@today.demo', password: 'premium1234' },
-    { label: 'Belum premium', email: 'siswa@today.demo', password: 'siswa1234' },
+    { label: 'Admin (@admin)', email: 'admin@today.demo', password: 'admin1234' },
+    { label: 'Premium (@premium)', email: 'premium@today.demo', password: 'premium1234' },
+    { label: 'Belum premium (@siswa)', email: 'siswa@today.demo', password: 'siswa1234' },
   ]
 
   const submit = async (e) => {

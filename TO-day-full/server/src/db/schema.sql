@@ -3,6 +3,7 @@
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
+  username TEXT NOT NULL,
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   is_premium BOOLEAN NOT NULL DEFAULT FALSE,
@@ -17,6 +18,13 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Database lama ikut mendapat kolom admin tanpa perlu drop tabel.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Username dipakai sebagai identitas publik di leaderboard. Akun lama yang
+-- belum punya username diberi fallback unik user<id>.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT;
+UPDATE users SET username = 'user' || id WHERE username IS NULL OR BTRIM(username) = '';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_lower ON users (LOWER(username));
+ALTER TABLE users ALTER COLUMN username SET NOT NULL;
 
 CREATE TABLE IF NOT EXISTS subtests (
   code TEXT PRIMARY KEY,              -- 'PU', 'PM', 'BIND', 'BING'

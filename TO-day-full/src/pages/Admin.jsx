@@ -178,6 +178,7 @@ export default function Admin() {
                     </td>
                     <td>
                       {p.name}
+                      <span className="muted">@{p.username}</span>
                       <span className="muted">{p.email}</span>
                     </td>
                     <td>{formatRupiah(p.amount)}</td>

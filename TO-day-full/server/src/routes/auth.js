@@ -17,6 +17,7 @@ function publicUser(row) {
   return {
     id: row.id,
     name: row.name,
+    username: row.username,
     email: row.email,
     isPremium: !!row.is_premium,
     premiumUntil: dateOnly(row.premium_until),
@@ -29,24 +30,41 @@ function publicUser(row) {
 }
 
 router.post('/register', asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body || {}
-  if (!name || !email || !password) {
-    return res.status(400).json({ error: 'Nama, email, dan password wajib diisi.' })
+  const { name, username, email, password } = req.body || {}
+  if (!name || !username || !email || !password) {
+    return res.status(400).json({ error: 'Nama, username, email, dan password wajib diisi.' })
   }
   if (String(password).length < 6) {
     return res.status(400).json({ error: 'Password minimal 6 karakter.' })
   }
+
+  const normalizedUsername = String(username).trim().toLowerCase()
+  if (!/^[a-z0-9_]{3,20}$/.test(normalizedUsername)) {
+    return res.status(400).json({
+      error: 'Username harus 3-20 karakter dan hanya boleh berisi huruf, angka, atau underscore.',
+    })
+  }
+
   const normalizedEmail = String(email).trim().toLowerCase()
-  const existing = await pool.query('SELECT id FROM users WHERE email = $1', [normalizedEmail])
-  if (existing.rowCount > 0) {
+  const existingEmail = await pool.query('SELECT id FROM users WHERE email = $1', [normalizedEmail])
+  if (existingEmail.rowCount > 0) {
     return res.status(409).json({ error: 'Email sudah terdaftar. Silakan login.' })
   }
+
+  const existingUsername = await pool.query(
+    'SELECT id FROM users WHERE LOWER(username) = $1',
+    [normalizedUsername]
+  )
+  if (existingUsername.rowCount > 0) {
+    return res.status(409).json({ error: 'Username sudah dipakai. Pilih username lain.' })
+  }
+
   const hash = bcrypt.hashSync(password, 10)
   const inserted = await pool.query(`
-    INSERT INTO users (name, email, password_hash, is_premium)
-    VALUES ($1, $2, $3, FALSE)
+    INSERT INTO users (name, username, email, password_hash, is_premium)
+    VALUES ($1, $2, $3, $4, FALSE)
     RETURNING *
-  `, [name.trim(), normalizedEmail, hash])
+  `, [name.trim(), normalizedUsername, normalizedEmail, hash])
 
   const user = inserted.rows[0]
   const token = signToken(user)

@@ -23,12 +23,12 @@ router.get('/payments', asyncHandler(async (req, res) => {
   const result = await pool.query(`
     SELECT p.id, p.provider_ref AS order_id, p.amount, p.method, p.provider,
            p.status, p.admin_note, p.created_at, p.paid_at,
-           u.name, u.email
+           u.name, u.username, u.email
       FROM payments p
       JOIN users u ON u.id = p.user_id
-     WHERE p.status = $1
-     ORDER BY p.created_at ASC
-     LIMIT 200
+      WHERE p.status = $1
+      ORDER BY p.created_at ASC
+      LIMIT 200
   `, [status])
 
   res.json({ payments: result.rows })

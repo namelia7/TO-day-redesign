@@ -47,17 +47,23 @@ file `.env`, lihat `.env.example` di folder utama).
 Dibuat/di-reset otomatis oleh `npm run seed` (dan oleh `npm run demo:local`):
 
 ```
-Admin          : admin@today.demo / admin1234
-Premium        : premium@today.demo / premium1234
-Belum premium  : siswa@today.demo / siswa1234
+Admin          : @admin   | admin@today.demo / admin1234
+Premium        : @premium | premium@today.demo / premium1234
+Belum premium  : @siswa   | siswa@today.demo / siswa1234
 ```
 
-Login sebagai admin akan langsung diarahkan ke `/admin` untuk menyetujui
-pembayaran. Kamu juga bisa mendaftar akun baru lewat halaman Register — ini
-akun sungguhan yang tersimpan di database, bukan simulasi.
+Akun `@premium` sudah memiliki 12 riwayat tryout lintas 14 hari dengan skor dan
+penguasaan subtes yang bervariasi, jadi halaman Statistik dan Leaderboard
+langsung berisi data saat presentasi. Login sebagai admin akan diarahkan ke
+`/admin` untuk menyetujui pembayaran.
 
-Setiap `npm run seed` (termasuk lewat `demo:local`) mereset password dan status
-ketiga akun demo. Setelah presentasi, hapus akun demo dan jangan biarkan
+Kamu juga bisa mendaftar akun baru lewat halaman Register. Username wajib diisi,
+unik, 3-20 karakter (huruf, angka, underscore), dan tampil di leaderboard.
+Ini akun sungguhan yang tersimpan di database, bukan simulasi.
+
+Setiap `npm run seed` (termasuk lewat `demo:local`) mereset password/status
+ketiga akun demo dan riwayat latihan akun demo, lalu mengisi ulang statistik
+contoh. Setelah presentasi, hapus akun demo dan jangan biarkan
 `admin@today.demo` aktif di database produksi:
 
 ```sql
@@ -74,7 +80,7 @@ Ganti juga `ADMIN_TOKEN`/`JWT_SECRET` jika nilai demo pernah dibagikan.
 | Login | 1 akun hardcoded di kode frontend | Register/login sungguhan, password di-hash (bcrypt), sesi via JWT |
 | Data pengguna | localStorage browser | Database PostgreSQL di server |
 | Penilaian jawaban | Dihitung di browser (bisa dimanipulasi lewat devtools) | Dihitung di server; kunci jawaban tidak pernah dikirim ke browser sebelum tryout selesai |
-| Leaderboard | Data hardcoded (`Alya R.`, `Raka P.`, dst) | Dihitung dari skor tertinggi tiap pengguna sungguhan di database |
+| Leaderboard | Data hardcoded (`Alya R.`, `Raka P.`, dst) | Dihitung dari skor tertinggi tiap pengguna sungguhan dan ditampilkan dengan username |
 | Statistik | Data hardcoded 14 hari | Dihitung dari riwayat tryout sungguhan milik pengguna yang login |
 | Pembayaran | Simulasi di state lokal | QRIS via WhatsApp (verifikasi admin) atau Midtrans Snap bila kredensial tersedia |
 
@@ -116,9 +122,9 @@ meski Midtrans belum aktif.
 
 ## Yang MASIH perlu kamu lengkapi sendiri sebelum dipakai sungguhan
 
-1. **Bank soal masih terbatas (8 soal)** — soal di database ini hanya contoh
-   latihan, bukan soal UTBK resmi. Tambahkan lewat `server/src/db/seed.js` atau
-   bangun panel admin terpisah.
+1. **Bank soal masih terbatas (26 soal bergaya UTBK)** — soal di database ini
+   adalah latihan, bukan soal UTBK resmi. Tambahkan lewat
+   `server/src/db/seed.js` atau bangun panel admin terpisah.
 2. **"Tanya AI" masih balasan template** — bukan panggilan model AI sungguhan.
    Untuk menyambungkannya, tambahkan endpoint backend yang memanggil API AI
    dengan key milikmu (jangan pernah dari frontend).

@@ -6,6 +6,7 @@ import './pages.css'
 
 export default function Register() {
   const [name, setName] = useState('')
+  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [show, setShow] = useState(false)
@@ -19,7 +20,7 @@ export default function Register() {
     setError('')
     setSubmitting(true)
     try {
-      await register({ name, email, password })
+      await register({ name, username, email, password })
       nav('/profile')
     } catch (err) {
       setError(err.message || 'Gagal mendaftar. Coba lagi.')
@@ -39,6 +40,19 @@ export default function Register() {
         {error && <div className="error" role="alert">{error}</div>}
         <form onSubmit={submit} className="auth-form">
           <input placeholder="Nama lengkap" aria-label="Nama lengkap" value={name} onChange={e => setName(e.target.value)} required />
+          <input
+            placeholder="Username (tampil di leaderboard)"
+            aria-label="Username"
+            value={username}
+            onChange={e => setUsername(e.target.value.toLowerCase())}
+            pattern="[a-z0-9_]{3,20}"
+            title="3-20 karakter: huruf kecil, angka, atau underscore"
+            minLength={3}
+            maxLength={20}
+            autoComplete="username"
+            required
+          />
+          <p className="hint">Username 3-20 karakter, hanya huruf, angka, atau underscore.</p>
           <input type="email" placeholder="Email" aria-label="Email" value={email} onChange={e => setEmail(e.target.value)} required />
           <div className="field-wrap">
             <input type={show ? 'text' : 'password'} placeholder="Password" aria-label="Password" minLength={6} value={password} onChange={e => setPassword(e.target.value)} required />

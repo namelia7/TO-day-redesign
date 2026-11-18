@@ -67,6 +67,10 @@ src/
 | POST | `/api/admin/payments/:id/approve` | admin | Setujui pembayaran, aktifkan premium |
 | POST | `/api/admin/payments/:id/reject` | admin | Tolak pembayaran manual |
 
+Body registrasi: `{ "name", "username", "email", "password" }`. `username`
+harus unik, 3-20 karakter, hanya huruf/angka/underscore, dan dipakai di
+leaderboard.
+
 Semua endpoint ber-auth butuh header `Authorization: Bearer <token>`.
 Endpoint admin menerima JWT milik user dengan `users.is_admin = true`, atau
 header `x-admin-token` yang sama dengan `ADMIN_TOKEN` (fallback).
@@ -84,13 +88,18 @@ npm run migrate   # manual
 npm run seed      # manual (idempotent)
 ```
 
-`npm run seed` membuat tiga akun demo saat development:
+`npm run seed` membuat tiga akun demo saat development, lengkap dengan
+username publik untuk leaderboard:
 
 ```
-Admin          : admin@today.demo / admin1234
-Premium        : premium@today.demo / premium1234
-Belum premium  : siswa@today.demo / siswa1234
+Admin          : @admin   | admin@today.demo / admin1234
+Premium        : @premium | premium@today.demo / premium1234
+Belum premium  : @siswa   | siswa@today.demo / siswa1234
 ```
+
+Akun premium mendapat 12 attempt contoh yang tersebar di beberapa hari, plus
+beberapa attempt untuk akun gratis dan `johndoe@gmail.com` agar leaderboard
+tidak kosong. Riwayat akun demo di-reset setiap seed.
 
 Akun demo dilewati saat `NODE_ENV=production` atau `SKIP_DEMO_USER=true`,
 kecuali `SEED_DEMO_ACCOUNTS=true` (dipakai script `demo:local`).
