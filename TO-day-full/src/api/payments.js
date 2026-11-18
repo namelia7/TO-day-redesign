@@ -28,24 +28,17 @@ export async function getPaymentHistory() {
   return res.data // { payments }
 }
 
-function adminHeaders(token) {
-  return { headers: { 'x-admin-token': token } }
-}
-
-export async function getAdminPayments(token, status = 'pending') {
-  const res = await api.get('/admin/payments', {
-    params: { status },
-    ...adminHeaders(token),
-  })
+export async function getAdminPayments(status = 'pending') {
+  const res = await api.get('/admin/payments', { params: { status } })
   return res.data
 }
 
-export async function approvePayment(id, token, note = '') {
-  const res = await api.post(`/admin/payments/${id}/approve`, { note }, adminHeaders(token))
+export async function approvePayment(id, note = '') {
+  const res = await api.post(`/admin/payments/${id}/approve`, { note })
   return res.data
 }
 
-export async function rejectPayment(id, token, note = '') {
-  const res = await api.post(`/admin/payments/${id}/reject`, { note }, adminHeaders(token))
+export async function rejectPayment(id, note = '') {
+  const res = await api.post(`/admin/payments/${id}/reject`, { note })
   return res.data
 }

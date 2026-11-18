@@ -21,7 +21,7 @@ function PrivateRoute({ children }) {
 function PublicOnly({ children }) {
   const { user, loading } = useAuth()
   if (loading) return <div className="app-loading">Memuat...</div>
-  return user ? <Navigate to="/profile" /> : children
+  return user ? <Navigate to={user.isAdmin ? '/admin' : '/profile'} replace /> : children
 }
 
 function App() {

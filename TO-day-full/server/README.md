@@ -30,7 +30,7 @@ src/
 │   └── premium.js             # aktivasi/perpanjangan premium
 ├── middleware/
 │   ├── auth.js              # verifikasi JWT
-│   └── admin.js              # token admin (header x-admin-token)
+│   └── admin.js              # cek admin JWT / token fallback x-admin-token
 └── routes/
     ├── auth.js               # register, login, profil
     ├── tryouts.js             # daftar tryout, ambil soal
@@ -63,12 +63,13 @@ src/
 | POST | `/api/payments/webhook` | - | Notifikasi Midtrans (verifikasi signature) |
 | GET | `/api/payments/:id/status` | ✓ | Status satu transaksi (untuk polling) |
 | GET | `/api/payments/history` | ✓ | Riwayat transaksi |
-| GET | `/api/admin/payments` | admin | Daftar pembayaran manual (header `x-admin-token`) |
+| GET | `/api/admin/payments` | admin | Daftar pembayaran manual |
 | POST | `/api/admin/payments/:id/approve` | admin | Setujui pembayaran, aktifkan premium |
 | POST | `/api/admin/payments/:id/reject` | admin | Tolak pembayaran manual |
 
 Semua endpoint ber-auth butuh header `Authorization: Bearer <token>`.
-Endpoint admin butuh header `x-admin-token` yang sama dengan `ADMIN_TOKEN`.
+Endpoint admin menerima JWT milik user dengan `users.is_admin = true`, atau
+header `x-admin-token` yang sama dengan `ADMIN_TOKEN` (fallback).
 
 ## Database
 
@@ -83,8 +84,17 @@ npm run migrate   # manual
 npm run seed      # manual (idempotent)
 ```
 
-`npm run seed` tidak membuat akun demo saat `NODE_ENV=production` atau
-`SKIP_DEMO_USER=true`.
+`npm run seed` membuat tiga akun demo saat development:
+
+```
+Admin          : admin@today.demo / admin1234
+Premium        : premium@today.demo / premium1234
+Belum premium  : siswa@today.demo / siswa1234
+```
+
+Akun demo dilewati saat `NODE_ENV=production` atau `SKIP_DEMO_USER=true`,
+kecuali `SEED_DEMO_ACCOUNTS=true` (dipakai script `demo:local`).
+Ganti/hapus akun demo sebelum produksi sungguhan.
 
 ## Catatan keamanan untuk produksi
 

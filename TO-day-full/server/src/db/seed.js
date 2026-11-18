@@ -33,6 +33,47 @@ const TRYOUTS = [
   { id: 'sub-bing', title: 'Kuis Bahasa Inggris', type: 'subtest', subtest: 'BING', premium: 1, duration: 600, desc: 'Grammar dan reading comprehension.' },
 ]
 
+// Akun untuk presentasi/demo. Password hanya untuk demo lokal; seed ini
+// otomatis dilewati di produksi kecuali SEED_DEMO_ACCOUNTS=true.
+const DEMO_ACCOUNTS = [
+  {
+    label: 'Admin',
+    name: 'Admin TO-Day',
+    email: 'admin@today.demo',
+    password: 'admin1234',
+    isAdmin: true,
+    isPremium: false,
+    school: null,
+    ptn: null,
+    prodi: null,
+    passing: null,
+  },
+  {
+    label: 'Premium',
+    name: 'Siswa Premium',
+    email: 'premium@today.demo',
+    password: 'premium1234',
+    isAdmin: false,
+    isPremium: true,
+    school: 'SMA Negeri 1 Jakarta',
+    ptn: 'Institut Teknologi Bandung',
+    prodi: 'Teknik Informatika',
+    passing: 650,
+  },
+  {
+    label: 'Gratis',
+    name: 'Siswa Gratis',
+    email: 'siswa@today.demo',
+    password: 'siswa1234',
+    isAdmin: false,
+    isPremium: false,
+    school: 'SMA Negeri 2 Bandung',
+    ptn: 'Universitas Indonesia',
+    prodi: 'Ilmu Komputer',
+    passing: 700,
+  },
+]
+
 function questionsForTryout(t) {
   if (t.subtest) return QUESTIONS.filter(q => q.subtest === t.subtest)
   return QUESTIONS // tryout tipe 'utbk' memakai semua soal (demo)
@@ -70,26 +111,53 @@ async function seed() {
     }
   }
 
-  // Akun demo, sama seperti versi demo: johndoe@gmail.com / pass1234
-  // Jangan dibuat di produksi karena password-nya publik.
-  const skipDemoUser = process.env.NODE_ENV === 'production' || process.env.SKIP_DEMO_USER === 'true'
-  if (skipDemoUser) {
+  // Akun demo untuk presentasi. Jangan dibuat di produksi karena password-nya
+  // publik; script demo:local menyalakan SEED_DEMO_ACCOUNTS=true.
+  const shouldSeedDemo = process.env.SEED_DEMO_ACCOUNTS === 'true'
+    || (process.env.NODE_ENV !== 'production' && process.env.SKIP_DEMO_USER !== 'true')
+  if (!shouldSeedDemo) {
     console.log('Akun demo dilewati (produksi / SKIP_DEMO_USER=true).')
     console.log('Seed selesai.')
     return
   }
 
-  const existing = await pool.query('SELECT id FROM users WHERE email = $1', ['johndoe@gmail.com'])
-  if (existing.rowCount === 0) {
-    const hash = await bcrypt.hash('pass1234', 10)
+  for (const account of DEMO_ACCOUNTS) {
+    const hash = await bcrypt.hash(account.password, 10)
+    const premiumUntil = account.isPremium
+      ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      : null
     await pool.query(
-      `INSERT INTO users (name, email, password_hash, is_premium, school, ptn, prodi, passing_grade)
-       VALUES ($1, $2, $3, TRUE, $4, $5, $6, $7)`,
-      ['John Doe', 'johndoe@gmail.com', hash, 'SMA Negeri 1 Jakarta', 'Institut Teknologi Bandung', 'Teknik Informatika', 650]
+      `INSERT INTO users
+         (name, email, password_hash, is_premium, premium_until, is_admin, school, ptn, prodi, passing_grade)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       ON CONFLICT (email) DO UPDATE SET
+         name = EXCLUDED.name,
+         password_hash = EXCLUDED.password_hash,
+         is_premium = EXCLUDED.is_premium,
+         premium_until = EXCLUDED.premium_until,
+         is_admin = EXCLUDED.is_admin,
+         school = EXCLUDED.school,
+         ptn = EXCLUDED.ptn,
+         prodi = EXCLUDED.prodi,
+         passing_grade = EXCLUDED.passing_grade`,
+      [
+        account.name,
+        account.email,
+        hash,
+        account.isPremium,
+        premiumUntil,
+        account.isAdmin,
+        account.school,
+        account.ptn,
+        account.prodi,
+        account.passing,
+      ]
     )
-    console.log('Akun demo dibuat: johndoe@gmail.com / pass1234')
-  } else {
-    console.log('Akun demo sudah ada, dilewati.')
+  }
+
+  console.log('Akun demo siap:')
+  for (const account of DEMO_ACCOUNTS) {
+    console.log(`  ${account.label.padEnd(8)}: ${account.email} / ${account.password}`)
   }
 
   console.log('Seed selesai.')

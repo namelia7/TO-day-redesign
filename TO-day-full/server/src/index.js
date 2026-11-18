@@ -12,10 +12,27 @@ import { runStartupTasks } from './db/bootstrap.js'
 
 const app = express()
 const PORT = process.env.PORT || 4000
-const FRONTEND_URL = (process.env.FRONTEND_URL || '').replace(/\/$/, '')
+// Bisa berisi beberapa origin dipisah koma, mis.
+// "https://to-day.vercel.app,https://*.vercel.app". Kosong = izinkan semua.
+const FRONTEND_ORIGINS = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map(value => value.trim().replace(/\/$/, ''))
+  .filter(Boolean)
+
+function isOriginAllowed(origin) {
+  if (!origin) return true
+  return FRONTEND_ORIGINS.some((pattern) => {
+    if (pattern === '*') return true
+    if (!pattern.includes('*')) return origin === pattern
+    const regex = pattern.replace(/\./g, '\\.').replace(/\*/g, '.*')
+    return new RegExp(`^${regex}$`).test(origin)
+  })
+}
 
 app.set('trust proxy', 1)
-app.use(cors(FRONTEND_URL ? { origin: FRONTEND_URL } : {}))
+app.use(cors(FRONTEND_ORIGINS.length
+  ? { origin: (origin, callback) => callback(null, isOriginAllowed(origin)) }
+  : {}))
 app.use(express.json())
 
 app.get('/api/health', (req, res) => res.json({ ok: true, name: 'TO-Day API' }))

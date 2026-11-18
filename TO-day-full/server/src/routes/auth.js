@@ -20,6 +20,7 @@ function publicUser(row) {
     email: row.email,
     isPremium: !!row.is_premium,
     premiumUntil: dateOnly(row.premium_until),
+    isAdmin: !!row.is_admin,
     school: row.school,
     ptn: row.ptn,
     prodi: row.prodi,

@@ -2,7 +2,8 @@ import axios from 'axios'
 
 // URL backend. Saat development default ke server lokal (lihat server/README).
 // Saat deploy, set VITE_API_URL di file .env frontend.
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
+const configuredApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
+export const API_URL = configuredApiUrl.replace(/\/+$/, '')
 
 export const api = axios.create({ baseURL: API_URL })
 

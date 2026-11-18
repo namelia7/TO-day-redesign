@@ -34,6 +34,7 @@ export default function Header() {
               <Link to="/tryouts">Tryout</Link>
               <Link to="/stats">Statistik</Link>
               <Link to="/results">Hasil</Link>
+              {user.isAdmin && <Link to="/admin">Admin</Link>}
             </>
           )}
         </nav>

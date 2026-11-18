@@ -113,6 +113,9 @@ label { display: block; font-weight: 600; font-size: 14px; margin: 14px 0 6px; }
 .switch { margin-top: 30px; color: var(--muted); }
 .switch a { color: var(--primary); font-weight: 700; text-decoration: none; }
 .demo-hint { margin-top: 22px; max-width: 420px; background: rgba(255,255,255,0.6); border: 1px dashed var(--primary); color: var(--primary-dark); border-radius: 14px; padding: 10px 16px; font-size: 13.5px; cursor: pointer; }
+.demo-accounts { margin-top: 22px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 460px; }
+.demo-accounts > span { width: 100%; color: var(--muted); font-size: 13px; }
+.demo-accounts .demo-hint { margin-top: 0; }
 .error { color: #a4243b; background: #fde8ec; border: 1px solid #f6c5cf; padding: 10px 14px; border-radius: 12px; margin-bottom: 16px; font-size: 14px; text-align: left; }
 
 /* ---------- Halaman dalam (akan dirapikan berikutnya) ---------- */

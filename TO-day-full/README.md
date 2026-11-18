@@ -44,14 +44,28 @@ file `.env`, lihat `.env.example` di folder utama).
 
 ### Akun demo
 
+Dibuat/di-reset otomatis oleh `npm run seed` (dan oleh `npm run demo:local`):
+
 ```
-Email    : johndoe@gmail.com
-Password : pass1234
+Admin          : admin@today.demo / admin1234
+Premium        : premium@today.demo / premium1234
+Belum premium  : siswa@today.demo / siswa1234
 ```
 
-Akun ini dibuat otomatis oleh `npm run seed` dan sudah berstatus Premium.
-Kamu juga bisa mendaftar akun baru lewat halaman Register — ini akun
-sungguhan yang tersimpan di database, bukan simulasi.
+Login sebagai admin akan langsung diarahkan ke `/admin` untuk menyetujui
+pembayaran. Kamu juga bisa mendaftar akun baru lewat halaman Register — ini
+akun sungguhan yang tersimpan di database, bukan simulasi.
+
+Setiap `npm run seed` (termasuk lewat `demo:local`) mereset password dan status
+ketiga akun demo. Setelah presentasi, hapus akun demo dan jangan biarkan
+`admin@today.demo` aktif di database produksi:
+
+```sql
+DELETE FROM users
+ WHERE email IN ('admin@today.demo', 'premium@today.demo', 'siswa@today.demo');
+```
+
+Ganti juga `ADMIN_TOKEN`/`JWT_SECRET` jika nilai demo pernah dibagikan.
 
 ## Apa yang BERBEDA dari versi demo
 
@@ -71,12 +85,18 @@ sungguhan yang tersimpan di database, bukan simulasi.
 2. Server membuat order `TO-M-<id>` berstatus `pending` dan mengembalikan link
    `wa.me` dengan pesan berisi order ID, nama, email.
 3. Admin mengirim gambar QRIS di chat WhatsApp; pembeli membayar Rp 19.000 dan
-   mengirim bukti.
-4. Admin membuka `/admin`, memasukkan `ADMIN_TOKEN`, lalu klik **Setujui**.
-   Premium aktif 1 bulan; status `paid` hanya bisa diubah lewat endpoint admin.
+   mengirim bukti transfer ke chat yang sama.
+4. Admin login (akun `admin@today.demo`) lalu membuka `/admin` dan klik
+   **Setujui**. Premium aktif 1 bulan; status `paid` hanya bisa diubah lewat
+   endpoint admin.
+
+Nomor WhatsApp admin untuk demo: **081957052500** (disimpan sebagai
+`WHATSAPP_NUMBER=6281957052500`). Template chat otomatis berisi order ID, nama,
+email, nominal, dan permintaan gambar QRIS.
 
 Env yang dibutuhkan: `MANUAL_PAYMENT_ENABLED=true`, `WHATSAPP_NUMBER`,
-`MANUAL_HOLD_HOURS`, `ADMIN_TOKEN` (lihat `server/.env.example`).
+`MANUAL_HOLD_HOURS` (lihat `server/.env.example`). `ADMIN_TOKEN` opsional,
+hanya fallback API jika login admin tidak dipakai.
 
 ### Mode otomatis: Midtrans Snap
 1. `POST /api/payments` membuat baris `payments` `pending` lalu memanggil
@@ -113,13 +133,61 @@ Lihat `server/src/db/schema.sql` untuk skema lengkap. Ringkasnya: `users`,
 
 - **Backend**: Railway (root directory `server`), tambahkan plugin PostgreSQL,
   lalu set env `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL`, dan—untuk mode
-  manual—`MANUAL_PAYMENT_ENABLED=true`, `WHATSAPP_NUMBER`, `ADMIN_TOKEN`.
+  manual—`MANUAL_PAYMENT_ENABLED=true`, `WHATSAPP_NUMBER`. `ADMIN_TOKEN`
+  opsional (fallback API); admin bisa login lewat akun ber-`is_admin`.
   Schema database otomatis dibuat saat start di produksi; set `RUN_SEED=true`
   sekali untuk mengisi soal/tryout, lalu hapus lagi.
 - **Frontend**: Vercel (framework Vite). Set `VITE_API_URL` ke URL backend,
   `VITE_MIDTRANS_CLIENT_KEY`, dan `VITE_MIDTRANS_IS_PRODUCTION`. File
   `vercel.json` sudah menangani rewrite SPA. Halaman admin ada di `/admin`.
 - Aktifkan HTTPS di kedua sisi sebelum menerima data pengguna sungguhan.
+
+### Demo cepat: backend lokal + frontend Vercel
+
+Kalau backend belum sempat di-deploy tetapi frontend Vercel harus bisa dipakai user:
+
+1. Isi `server/.env` minimal `DATABASE_URL` (Supabase Session pooler) dan `JWT_SECRET`.
+2. Dari root proyek, jalankan:
+   ```powershell
+   npm run demo:local
+   ```
+   Script akan melengkapi `ADMIN_TOKEN`, `WHATSAPP_NUMBER` (default
+   `6281957052500`), dan `MANUAL_PAYMENT_ENABLED`, menanyakan domain Vercel jika
+   belum ada, menjalankan migrasi/seed (termasuk tiga akun demo), menyalakan
+   backend, lalu membuat Cloudflare Quick Tunnel. `cloudflared` diunduh otomatis
+   (~55 MB, sekali saja). Nilai `VITE_API_URL` juga disalin ke clipboard.
+3. Copy nilai `VITE_API_URL` yang dicetak ke Vercel → Settings → Environment Variables
+   (Production), lalu **Redeploy**.
+4. Pastikan `FRONTEND_URL` di `server/.env` sama dengan domain Vercel. Boleh dikosongkan
+   atau diisi `*` untuk demo, tetapi CORS akan mengizinkan semua origin.
+5. Tunggu sampai script mencetak `Health check tunnel OK` sebelum membuka URL. Jika HP
+   menampilkan DNS error, flush DNS di perangkat atau gunakan data seluler.
+6. Jangan tutup terminal selama presentasi. URL `trycloudflare.com` berubah setiap tunnel
+   dijalankan; kalau berubah, perbarui `VITE_API_URL` di Vercel dan redeploy. Cegah laptop
+   sleep dengan `powercfg /change standby-timeout-ac 0`.
+
+### Memakai project Supabase lama
+
+Kalau ingin tetap memakai project Supabase yang sudah ada (tidak membuat baru):
+
+1. Buka [dashboard Supabase](https://supabase.com/dashboard), pilih project lama.
+2. Jika statusnya **Paused**, klik **Restore/Unpause** dan tunggu sampai aktif.
+3. Masuk ke **Project Settings → Database → Connection string**, pilih
+   **Session pooler** (port `5432`), lalu copy URI-nya.
+4. Ganti `[YOUR-PASSWORD]` dengan password database project. Jika lupa, reset
+   lewat **Database → Reset database password**.
+5. Pastikan host berakhiran `pooler.supabase.com` dan URI memakai
+   `?sslmode=require`. Tempel sebagai `DATABASE_URL` di `server/.env`.
+6. Jalankan `npm run demo:local`. Script akan menjalankan migrasi, menambah
+   kolom `is_admin`, dan membuat tiga akun demo.
+
+Kalau project lama sudah terhapus/tidak muncul di dashboard, datanya tidak bisa
+dipulihkan lewat kode; buat project Supabase baru lalu ulangi langkah 3–6.
+Akses dashboard dan password database hanya bisa dilakukan dari akun Supabase
+kamu.
+
+> Backend lokal + tunnel hanya untuk demo/presentasi, bukan produksi. Tekan Enter di
+> terminal untuk menghentikan backend dan tunnel setelah selesai.
 
 ## Build untuk produksi
 

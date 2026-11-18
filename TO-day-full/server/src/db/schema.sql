@@ -7,12 +7,16 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   is_premium BOOLEAN NOT NULL DEFAULT FALSE,
   premium_until TIMESTAMP,            -- tanggal kapan premium berakhir (NULL = tidak aktif)
+  is_admin BOOLEAN NOT NULL DEFAULT FALSE,
   school TEXT,
   ptn TEXT,
   prodi TEXT,
   passing_grade INTEGER,
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+-- Database lama ikut mendapat kolom admin tanpa perlu drop tabel.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE;
 
 CREATE TABLE IF NOT EXISTS subtests (
   code TEXT PRIMARY KEY,              -- 'PU', 'PM', 'BIND', 'BING'

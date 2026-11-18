@@ -21,14 +21,19 @@ export default function Login() {
   const [submitting, setSubmitting] = useState(false)
   const { login } = useAuth()
   const nav = useNavigate()
+  const demoAccounts = [
+    { label: 'Admin', email: 'admin@today.demo', password: 'admin1234' },
+    { label: 'Premium', email: 'premium@today.demo', password: 'premium1234' },
+    { label: 'Belum premium', email: 'siswa@today.demo', password: 'siswa1234' },
+  ]
 
   const submit = async (e) => {
     e.preventDefault()
     setError('')
     setSubmitting(true)
     try {
-      await login({ email, password })
-      nav('/profile')
+      const account = await login({ email, password })
+      nav(account.isAdmin ? '/admin' : '/profile')
     } catch (err) {
       setError(err.message || 'Email atau password salah.')
     } finally {
@@ -61,9 +66,19 @@ export default function Login() {
         <p className="switch">Belum punya akun? <Link to="/register">Register</Link></p>
       </div>
 
-      <button type="button" className="demo-hint" onClick={() => { setEmail('johndoe@gmail.com'); setPassword('pass1234') }}>
-        Akun demo: johndoe@gmail.com / pass1234. Ketuk untuk mengisi otomatis.
-      </button>
+      <div className="demo-accounts">
+        <span>Akun demo (ketuk untuk mengisi):</span>
+        {demoAccounts.map(account => (
+          <button
+            key={account.email}
+            type="button"
+            className="demo-hint"
+            onClick={() => { setEmail(account.email); setPassword(account.password) }}
+          >
+            {account.label}: {account.email} / {account.password}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }

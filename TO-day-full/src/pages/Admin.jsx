@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { approvePayment, getAdminPayments, rejectPayment } from '../api/payments'
 import { apiErrorMessage } from '../api/client'
+import { useAuth } from '../context/useAuth'
 import './pages.css'
-
-const TOKEN_KEY = 'tod_admin_token'
 
 function formatRupiah(value) {
   return `Rp ${Number(value).toLocaleString('id-ID')}`
@@ -14,12 +14,10 @@ function formatDate(value) {
   return new Date(value).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
-// Halaman verifikasi pembayaran manual. Token dimasukkan saat runtime dan
-// tidak pernah di-hardcode. API tetap menolak tanpa token yang benar.
+// Halaman verifikasi pembayaran manual. Akses memakai akun user dengan
+// is_admin = true; ADMIN_TOKEN tetap tersedia sebagai fallback API.
 export default function Admin() {
-  const [token, setToken] = useState(() => sessionStorage.getItem(TOKEN_KEY) || '')
-  const [input, setInput] = useState('')
-  const [authed, setAuthed] = useState(false)
+  const { user, loading: authLoading, logout } = useAuth()
   const [payments, setPayments] = useState([])
   const [status, setStatus] = useState('pending')
   const [loading, setLoading] = useState(false)
@@ -28,56 +26,34 @@ export default function Admin() {
   const [message, setMessage] = useState('')
   const [notes, setNotes] = useState({})
 
-  const load = useCallback(async (tok, filter) => {
+  const isAdmin = !!user?.isAdmin
+
+  const load = useCallback(async (filter) => {
+    if (!isAdmin) return
     setLoading(true)
     setError('')
     try {
-      const data = await getAdminPayments(tok, filter)
+      const data = await getAdminPayments(filter)
       setPayments(data.payments || [])
-      setAuthed(true)
-      sessionStorage.setItem(TOKEN_KEY, tok)
-      return true
     } catch (err) {
-      setAuthed(false)
+      setPayments([])
       setError(apiErrorMessage(err, 'Gagal memuat data admin.'))
-      return false
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [isAdmin])
 
   useEffect(() => {
-    if (!token) return
-    const timer = setTimeout(() => { load(token, status) }, 0)
+    if (!isAdmin) return
+    const timer = setTimeout(() => { load(status) }, 0)
     return () => clearTimeout(timer)
-  }, [token, status, load])
+  }, [isAdmin, status, load])
 
   useEffect(() => {
-    if (!authed) return
-    const timer = setInterval(() => { load(token, status) }, 30000)
+    if (!isAdmin) return
+    const timer = setInterval(() => { load(status) }, 30000)
     return () => clearInterval(timer)
-  }, [authed, token, status, load])
-
-  const login = async (e) => {
-    e.preventDefault()
-    const value = input.trim()
-    if (!value) return
-    setMessage('')
-    const ok = await load(value, status)
-    if (ok) {
-      setToken(value)
-      setInput('')
-    }
-  }
-
-  const logout = () => {
-    sessionStorage.removeItem(TOKEN_KEY)
-    setToken('')
-    setAuthed(false)
-    setPayments([])
-    setMessage('')
-    setError('')
-  }
+  }, [isAdmin, status, load])
 
   const act = async (payment, kind) => {
     if (kind === 'approve') {
@@ -92,15 +68,15 @@ export default function Admin() {
     setMessage('')
     try {
       const note = notes[payment.id] || ''
-      if (kind === 'approve') await approvePayment(payment.id, token, note)
-      else await rejectPayment(payment.id, token, note)
+      if (kind === 'approve') await approvePayment(payment.id, note)
+      else await rejectPayment(payment.id, note)
 
       setMessage(
         kind === 'approve'
           ? `Pembayaran ${payment.order_id || `#${payment.id}`} disetujui. Premium diaktifkan 1 bulan.`
           : `Pembayaran ${payment.order_id || `#${payment.id}`} ditolak.`
       )
-      await load(token, status)
+      await load(status)
     } catch (err) {
       setError(apiErrorMessage(err, 'Aksi gagal. Coba lagi.'))
     } finally {
@@ -108,30 +84,41 @@ export default function Admin() {
     }
   }
 
-  if (!authed) {
+  if (authLoading) {
+    return <div className="app-loading">Memuat...</div>
+  }
+
+  if (!user) {
     return (
       <div className="admin-wrap">
         <div className="page-head">
           <h1>Admin TO-Day</h1>
-          <p>Masukkan token admin untuk memverifikasi pembayaran manual QRIS.</p>
+          <p>Login dengan akun admin untuk memverifikasi pembayaran manual QRIS.</p>
         </div>
-        <form className="glass-card panel admin-gate" onSubmit={login}>
-          <label htmlFor="admin-token">Token admin</label>
-          <input
-            id="admin-token"
-            type="password"
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            placeholder="ADMIN_TOKEN"
-            autoComplete="current-password"
-          />
-          {error && <div className="error" role="alert" style={{ marginTop: 12 }}>{error}</div>}
+        <div className="glass-card panel admin-gate">
+          <p className="hint">Halaman ini hanya bisa dibuka oleh akun admin.</p>
           <div className="form-actions">
-            <button className="btn btn-primary" type="submit" disabled={loading}>
-              {loading ? 'Memeriksa...' : 'Masuk'}
-            </button>
+            <Link className="btn btn-primary" to="/login">Login admin</Link>
           </div>
-        </form>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="admin-wrap">
+        <div className="page-head">
+          <h1>Admin TO-Day</h1>
+          <p>Akun ini tidak punya akses admin.</p>
+        </div>
+        <div className="glass-card panel admin-gate">
+          <p className="hint">Login dengan akun admin untuk membuka verifikasi pembayaran.</p>
+          <div className="form-actions">
+            <Link className="btn btn-primary" to="/profile">Kembali ke profil</Link>
+            <button className="btn btn-glass" onClick={logout}>Keluar</button>
+          </div>
+        </div>
       </div>
     )
   }
@@ -140,7 +127,7 @@ export default function Admin() {
     <div className="admin-wrap">
       <div className="page-head">
         <h1>Verifikasi Pembayaran</h1>
-        <p>Setujui hanya setelah dana QRIS benar-benar masuk ke rekening Anda.</p>
+        <p>Setujui hanya setelah dana QRIS benar-benar masuk. Login sebagai {user.email}.</p>
       </div>
 
       <div className="glass-card panel">
@@ -158,7 +145,7 @@ export default function Admin() {
             ))}
           </div>
           <div className="admin-actions">
-            <button className="btn btn-glass" onClick={() => load(token, status)} disabled={loading}>
+            <button className="btn btn-glass" onClick={() => load(status)} disabled={loading}>
               {loading ? 'Memuat...' : 'Muat ulang'}
             </button>
             <button className="btn btn-glass" onClick={logout}>Keluar admin</button>
