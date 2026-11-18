@@ -1,8 +1,10 @@
 import { Router } from 'express'
-import { db } from '../db/index.js'
+import { pool } from '../db/index.js'
 import { requireAuth } from '../middleware/auth.js'
 
 const router = Router()
+
+const asyncHandler = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next)
 
 const PRICE = 19000 // Rp per bulan
 const METHODS = ['QRIS', 'GoPay', 'Transfer Bank']
@@ -38,7 +40,7 @@ router.get('/price', requireAuth, (req, res) => {
   res.json({ amount: PRICE, methods: METHODS, currency: 'IDR', simulated: true })
 })
 
-router.post('/', requireAuth, (req, res) => {
+router.post('/', requireAuth, asyncHandler(async (req, res) => {
   const { method } = req.body || {}
   if (!METHODS.includes(method)) {
     return res.status(400).json({ error: `Metode pembayaran harus salah satu dari: ${METHODS.join(', ')}` })
@@ -47,45 +49,72 @@ router.post('/', requireAuth, (req, res) => {
   // --- MODE SIMULASI (default) ---
   // Di produksi sungguhan, baris di bawah ini diganti dengan panggilan API
   // ke payment gateway untuk membuat transaksi sungguhan.
-  const info = db.prepare(`
+  const inserted = await pool.query(`
     INSERT INTO payments (user_id, amount, method, status, provider)
-    VALUES (?, ?, ?, 'pending', 'simulated')
-  `).run(req.userId, PRICE, method)
+    VALUES ($1, $2, $3, 'pending', 'simulated')
+    RETURNING id
+  `, [req.userId, PRICE, method])
 
   res.status(201).json({
-    paymentId: info.lastInsertRowid,
+    paymentId: inserted.rows[0].id,
     amount: PRICE,
     method,
     status: 'pending',
     simulated: true,
     note: 'Transaksi ini simulasi. Panggil POST /payments/:id/confirm untuk menyelesaikan (menggantikan webhook gateway asli).',
   })
-})
+}))
 
 // Di dunia nyata, langkah ini digantikan oleh WEBHOOK dari payment gateway
 // (server mereka yang memberi tahu server kita bahwa uang sudah masuk),
 // bukan dipanggil langsung oleh pengguna dari browser.
-router.post('/:id/confirm', requireAuth, (req, res) => {
-  const payment = db.prepare('SELECT * FROM payments WHERE id = ? AND user_id = ?').get(req.params.id, req.userId)
+router.post('/:id/confirm', requireAuth, asyncHandler(async (req, res) => {
+  const paymentResult = await pool.query(
+    'SELECT * FROM payments WHERE id = $1 AND user_id = $2',
+    [req.params.id, req.userId]
+  )
+  const payment = paymentResult.rows[0]
   if (!payment) return res.status(404).json({ error: 'Transaksi tidak ditemukan.' })
   if (payment.status === 'paid') return res.json({ ok: true, alreadyPaid: true })
 
-  const tx = db.transaction(() => {
-    db.prepare(`UPDATE payments SET status = 'paid', paid_at = datetime('now') WHERE id = ?`).run(payment.id)
-    const until = new Date()
-    until.setMonth(until.getMonth() + 1)
-    db.prepare(`UPDATE users SET is_premium = 1, premium_until = ? WHERE id = ?`)
-      .run(until.toISOString().slice(0, 10), req.userId)
-  })
-  tx()
+  const until = new Date()
+  until.setMonth(until.getMonth() + 1)
+  const untilDate = until.toISOString().slice(0, 10)
 
-  const user = db.prepare('SELECT is_premium, premium_until FROM users WHERE id = ?').get(req.userId)
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    await client.query(
+      `UPDATE payments SET status = 'paid', paid_at = NOW() WHERE id = $1`,
+      [payment.id]
+    )
+    await client.query(
+      `UPDATE users SET is_premium = TRUE, premium_until = $1 WHERE id = $2`,
+      [untilDate, req.userId]
+    )
+    await client.query('COMMIT')
+  } catch (err) {
+    await client.query('ROLLBACK')
+    throw err
+  } finally {
+    client.release()
+  }
+
+  const userResult = await pool.query(
+    `SELECT is_premium, to_char(premium_until, 'YYYY-MM-DD') AS premium_until
+     FROM users WHERE id = $1`,
+    [req.userId]
+  )
+  const user = userResult.rows[0]
   res.json({ ok: true, isPremium: !!user.is_premium, premiumUntil: user.premium_until })
-})
+}))
 
-router.get('/history', requireAuth, (req, res) => {
-  const rows = db.prepare('SELECT * FROM payments WHERE user_id = ? ORDER BY created_at DESC').all(req.userId)
-  res.json({ payments: rows })
-})
+router.get('/history', requireAuth, asyncHandler(async (req, res) => {
+  const result = await pool.query(
+    'SELECT * FROM payments WHERE user_id = $1 ORDER BY created_at DESC',
+    [req.userId]
+  )
+  res.json({ payments: result.rows })
+}))
 
 export default router

@@ -1,8 +1,9 @@
 // Seed database dengan subtes, soal, tryout, dan akun demo.
 // Soal di sini SAMA PERSIS dengan 8 soal yang ada di versi demo React
 // (src/data/mockQuestions.js) -- bukan soal UTBK resmi, hanya contoh latihan.
+import 'dotenv/config'
 import bcrypt from 'bcryptjs'
-import { db } from './index.js'
+import { pool } from './index.js'
 
 const SUBTESTS = [
   ['PU', 'Penalaran Umum'],
@@ -36,46 +37,47 @@ function questionsForTryout(t) {
   return QUESTIONS // tryout tipe 'utbk' memakai semua soal (demo)
 }
 
-function run() {
-  const insertSubtest = db.prepare('INSERT OR IGNORE INTO subtests (code, name) VALUES (?, ?)')
-  const tx1 = db.transaction(() => { for (const [code, name] of SUBTESTS) insertSubtest.run(code, name) })
-  tx1()
+async function run() {
+  for (const [code, name] of SUBTESTS) {
+    await pool.query(
+      'INSERT INTO subtests (code, name) VALUES ($1, $2) ON CONFLICT (code) DO NOTHING',
+      [code, name]
+    )
+  }
 
-  const insertQuestion = db.prepare(`
-    INSERT OR IGNORE INTO questions (id, subtest_code, stem, choices, answer, explain)
-    VALUES (@id, @subtest, @stem, @choices, @answer, @explain)
-  `)
-  const tx2 = db.transaction(() => {
-    for (const q of QUESTIONS) {
-      insertQuestion.run({ ...q, choices: q.choices ? JSON.stringify(q.choices) : null })
-    }
-  })
-  tx2()
+  for (const q of QUESTIONS) {
+    await pool.query(
+      `INSERT INTO questions (id, subtest_code, stem, choices, answer, explain)
+       VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (id) DO NOTHING`,
+      [q.id, q.subtest, q.stem, q.choices ? JSON.stringify(q.choices) : null, q.answer, q.explain]
+    )
+  }
 
-  const insertTryout = db.prepare(`
-    INSERT OR IGNORE INTO tryouts (id, title, type, subtest_code, is_premium, duration_seconds, description)
-    VALUES (@id, @title, @type, @subtest, @premium, @duration, @desc)
-  `)
-  const insertTQ = db.prepare(`
-    INSERT OR IGNORE INTO tryout_questions (tryout_id, question_id, position) VALUES (?, ?, ?)
-  `)
-  const tx3 = db.transaction(() => {
-    for (const t of TRYOUTS) {
-      insertTryout.run(t)
-      const qs = questionsForTryout(t)
-      qs.forEach((q, i) => insertTQ.run(t.id, q.id, i))
+  for (const t of TRYOUTS) {
+    await pool.query(
+      `INSERT INTO tryouts (id, title, type, subtest_code, is_premium, duration_seconds, description)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (id) DO NOTHING`,
+      [t.id, t.title, t.type, t.subtest, Boolean(t.premium), t.duration, t.desc]
+    )
+    const qs = questionsForTryout(t)
+    for (let i = 0; i < qs.length; i += 1) {
+      await pool.query(
+        `INSERT INTO tryout_questions (tryout_id, question_id, position)
+         VALUES ($1, $2, $3) ON CONFLICT (tryout_id, question_id) DO NOTHING`,
+        [t.id, qs[i].id, i]
+      )
     }
-  })
-  tx3()
+  }
 
   // Akun demo, sama seperti versi demo: johndoe@gmail.com / pass1234
-  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get('johndoe@gmail.com')
-  if (!existing) {
-    const hash = bcrypt.hashSync('pass1234', 10)
-    db.prepare(`
-      INSERT INTO users (name, email, password_hash, is_premium, school, ptn, prodi, passing_grade)
-      VALUES (?, ?, ?, 1, ?, ?, ?, ?)
-    `).run('John Doe', 'johndoe@gmail.com', hash, 'SMA Negeri 1 Jakarta', 'Institut Teknologi Bandung', 'Teknik Informatika', 650)
+  const existing = await pool.query('SELECT id FROM users WHERE email = $1', ['johndoe@gmail.com'])
+  if (existing.rowCount === 0) {
+    const hash = await bcrypt.hash('pass1234', 10)
+    await pool.query(
+      `INSERT INTO users (name, email, password_hash, is_premium, school, ptn, prodi, passing_grade)
+       VALUES ($1, $2, $3, TRUE, $4, $5, $6, $7)`,
+      ['John Doe', 'johndoe@gmail.com', hash, 'SMA Negeri 1 Jakarta', 'Institut Teknologi Bandung', 'Teknik Informatika', 650]
+    )
     console.log('Akun demo dibuat: johndoe@gmail.com / pass1234')
   } else {
     console.log('Akun demo sudah ada, dilewati.')
@@ -85,3 +87,8 @@ function run() {
 }
 
 run()
+  .catch(err => {
+    console.error(err)
+    process.exitCode = 1
+  })
+  .finally(() => pool.end())
