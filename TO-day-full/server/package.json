@@ -1,12 +1,16 @@
 {
   "name": "to-day-server",
   "version": "1.0.0",
-  "description": "Backend API untuk TO-Day: auth, database, tryout, hasil, leaderboard, dan simulasi pembayaran.",
+  "description": "Backend API untuk TO-Day: auth, database, tryout, hasil, leaderboard, dan pembayaran via Midtrans.",
   "type": "module",
   "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
+    "migrate": "node src/db/migrate.js",
     "seed": "node src/db/seed.js"
   },
   "dependencies": {
@@ -15,6 +19,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
+    "midtrans-client": "^1.4.3",
     "pg": "^8.13.1"
   }
 }

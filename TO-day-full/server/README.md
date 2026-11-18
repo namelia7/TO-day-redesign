@@ -1,15 +1,16 @@
 n# TO-Day API (backend)
 
-Backend Node.js + Express untuk aplikasi TO-Day, dengan database SQLite
-(via `better-sqlite3`).
+Backend Node.js + Express untuk aplikasi TO-Day, dengan database PostgreSQL
+(via `pg`) dan pembayaran melalui Midtrans Snap.
 
 ## Instalasi
 
 ```bash
 npm install
-cp .env.example .env
-npm run seed    # buat database, isi soal/tryout, dan akun demo
-npm run dev     # jalan di http://localhost:4000 dengan auto-restart saat file berubah
+cp .env.example .env    # isi DATABASE_URL dan kredensial Midtrans
+npm run migrate         # buat tabel di database kosong
+npm run seed            # isi soal/tryout dan akun demo (kecuali produksi)
+npm run dev             # jalan di http://localhost:4000 dengan auto-restart saat file berubah
 ```
 
 Untuk produksi (tanpa auto-restart): `npm start`.
@@ -21,17 +22,23 @@ src/
 ├── index.js              # entry point, setup Express
 ├── db/
 │   ├── schema.sql         # skema tabel
-│   ├── index.js            # koneksi database + inisialisasi skema
+│   ├── index.js            # koneksi database (SSL kondisional)
+│   ├── migrate.js           # jalankan schema.sql
 │   └── seed.js              # isi data awal (soal, tryout, akun demo)
+├── lib/
+│   ├── midtrans.js           # instance Snap Midtrans
+│   └── premium.js             # aktivasi/perpanjangan premium
 ├── middleware/
-│   └── auth.js              # verifikasi JWT
+│   ├── auth.js              # verifikasi JWT
+│   └── admin.js              # token admin (header x-admin-token)
 └── routes/
     ├── auth.js               # register, login, profil
     ├── tryouts.js             # daftar tryout, ambil soal
     ├── attempts.js             # submit jawaban, lihat hasil
     ├── leaderboard.js           # peringkat skor
     ├── stats.js                  # statistik progres belajar
-    └── payments.js                 # simulasi pembayaran (lihat catatan di dalam file)
+    ├── payments.js                 # Midtrans Snap + QRIS manual via WhatsApp
+    └── admin.js                     # verifikasi pembayaran manual
 ```
 
 ## Endpoint utama
@@ -50,26 +57,38 @@ src/
 | GET | `/api/attempts` | ✓ | Riwayat semua attempt milik pengguna |
 | GET | `/api/leaderboard` | ✓ | Peringkat skor tertinggi semua pengguna |
 | GET | `/api/stats` | ✓ | Statistik progres pengguna saat ini |
-| GET | `/api/payments/price` | ✓ | Harga & metode pembayaran |
-| POST | `/api/payments` | ✓ | Buat transaksi (simulasi) |
-| POST | `/api/payments/:id/confirm` | ✓ | Konfirmasi pembayaran, aktifkan premium |
+| GET | `/api/payments/price` | ✓ | Harga, mode pembayaran, dan order pending |
+| POST | `/api/payments` | ✓ | Buat transaksi Snap (jika Midtrans aktif) |
+| POST | `/api/payments/manual` | ✓ | Buat order QRIS via WhatsApp |
+| POST | `/api/payments/webhook` | - | Notifikasi Midtrans (verifikasi signature) |
+| GET | `/api/payments/:id/status` | ✓ | Status satu transaksi (untuk polling) |
 | GET | `/api/payments/history` | ✓ | Riwayat transaksi |
+| GET | `/api/admin/payments` | admin | Daftar pembayaran manual (header `x-admin-token`) |
+| POST | `/api/admin/payments/:id/approve` | admin | Setujui pembayaran, aktifkan premium |
+| POST | `/api/admin/payments/:id/reject` | admin | Tolak pembayaran manual |
 
 Semua endpoint ber-auth butuh header `Authorization: Bearer <token>`.
+Endpoint admin butuh header `x-admin-token` yang sama dengan `ADMIN_TOKEN`.
 
 ## Database
 
-Default memakai SQLite, file tersimpan di `data/to-day.sqlite3` (dibuat
-otomatis, diabaikan oleh git). Untuk reset database ke kondisi awal:
+Memakai PostgreSQL sesuai `DATABASE_URL`. Koneksi internal Railway dan host
+lokal otomatis tanpa SSL; host publik memakai SSL. Saat `NODE_ENV=production`
+(atau `RUN_MIGRATIONS=true`), `schema.sql` dijalankan otomatis saat server
+start — aman karena semua statement `IF NOT EXISTS`. Untuk mengisi data awal
+di server tanpa CLI, set `RUN_SEED=true` sekali saat deploy.
 
 ```bash
-rm -f data/to-day.sqlite3 data/to-day.sqlite3-shm data/to-day.sqlite3-wal
-npm run seed
+npm run migrate   # manual
+npm run seed      # manual (idempotent)
 ```
+
+`npm run seed` tidak membuat akun demo saat `NODE_ENV=production` atau
+`SKIP_DEMO_USER=true`.
 
 ## Catatan keamanan untuk produksi
 
 - Ganti `JWT_SECRET` di `.env` dengan string acak yang panjang dan rahasia.
+- `MIDTRANS_SERVER_KEY` hanya boleh ada di server; client key aman di frontend.
+- Set `FRONTEND_URL` agar CORS dan redirect pembayaran mengarah ke domain benar.
 - Jangan commit file `.env` ke git (sudah ada di `.gitignore`).
-- Pertimbangkan pindah ke PostgreSQL/MySQL jika aplikasi akan menerima banyak
-  pengguna bersamaan — SQLite cukup untuk pengembangan dan skala kecil.

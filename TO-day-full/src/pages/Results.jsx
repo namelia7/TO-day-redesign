@@ -162,7 +162,7 @@ export default function Results() {
         <Link to="/tryouts" className="btn btn-glass">Kerjakan tryout lain</Link>
         <Link to="/stats" className="btn btn-primary">Lihat statistik</Link>
       </div>
-      <UpgradeModal open={modal} onClose={() => setModal(false)} onPaid={onPaid} />
+      {modal && <UpgradeModal onClose={() => setModal(false)} onPaid={onPaid} />}
     </div>
   )
 }

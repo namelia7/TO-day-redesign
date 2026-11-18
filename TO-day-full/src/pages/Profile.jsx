@@ -1,9 +1,20 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
 import UpgradeModal from '../components/UpgradeModal'
+import { getPaymentHistory, getPaymentInfo, getPaymentStatus } from '../api/payments'
 import { PASSING } from '../data/referenceData'
 import './pages.css'
+
+function formatRupiah(value) {
+  return `Rp ${Number(value).toLocaleString('id-ID')}`
+}
+
+function paymentStatusLabel(status) {
+  if (status === 'paid') return 'Aktif'
+  if (status === 'pending') return 'Menunggu verifikasi'
+  return 'Gagal/kedaluwarsa'
+}
 
 export default function Profile() {
   const { user, updateUser, refreshUser } = useAuth()
@@ -15,6 +26,61 @@ export default function Profile() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [modal, setModal] = useState(false)
+  const [pending, setPending] = useState(null)
+  const [history, setHistory] = useState([])
+  const [checking, setChecking] = useState(false)
+  const [payMsg, setPayMsg] = useState('')
+
+  const loadPayments = async () => {
+    try {
+      const [info, hist] = await Promise.all([getPaymentInfo(), getPaymentHistory()])
+      setPending(info.pending || null)
+      setHistory(hist.payments || [])
+    } catch {
+      // Diamkan: bagian pembayaran opsional, jangan ganggu halaman profil.
+    }
+  }
+
+  useEffect(() => {
+    let active = true
+    async function load() {
+      try {
+        const [info, hist] = await Promise.all([getPaymentInfo(), getPaymentHistory()])
+        if (!active) return
+        setPending(info.pending || null)
+        setHistory(hist.payments || [])
+      } catch {
+        // abaikan
+      }
+    }
+    load()
+    return () => { active = false }
+  }, [])
+
+  const checkPayment = async () => {
+    if (!pending) return
+    setChecking(true)
+    setPayMsg('')
+    try {
+      const data = await getPaymentStatus(pending.paymentId)
+      if (data.status === 'paid') {
+        await refreshUser()
+        setPending(null)
+        setPayMsg('Pembayaran terverifikasi. Premium sudah aktif.')
+        await loadPayments()
+      } else if (data.status === 'failed') {
+        setPending(null)
+        setPayMsg('Pembayaran ditolak atau kedaluwarsa. Silakan buat order baru.')
+        await loadPayments()
+      } else {
+        setPayMsg('Pembayaran masih menunggu verifikasi admin.')
+      }
+    } catch {
+      setPayMsg('Gagal mengecek status. Coba lagi.')
+    } finally {
+      setChecking(false)
+    }
+  }
 
   const pickPtn = (v) => { setPtn(v); setProdi(''); setPassing('') }
   const pickProdi = (v) => { setProdi(v); setPassing(String(PASSING[ptn]?.[v] ?? '')) }
@@ -40,6 +106,28 @@ export default function Profile() {
         <h1>Halo, {user.name}</h1>
         <p>Atur tujuanmu supaya statistik bisa membandingkan skormu dengan passing grade.</p>
       </div>
+
+      {pending && (
+        <div className="pending-banner glass-card">
+          <div>
+            <strong>Pembayaran menunggu verifikasi</strong>
+            <p className="hint">
+              Order {pending.orderId} • {formatRupiah(pending.amount)}. Kirim bukti pembayaran via WhatsApp jika belum.
+            </p>
+          </div>
+          <div className="pending-actions">
+            <button className="btn btn-glass" onClick={checkPayment} disabled={checking}>
+              {checking ? 'Mengecek...' : 'Cek Status'}
+            </button>
+            {pending.whatsappUrl && (
+              <a className="btn btn-primary" href={pending.whatsappUrl} target="_blank" rel="noreferrer">
+                Buka WhatsApp
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+      {payMsg && <p className="hint pay-msg" role="status">{payMsg}</p>}
 
       <div className="two-col">
         <form className="glass-card panel" onSubmit={save}>
@@ -83,6 +171,24 @@ export default function Profile() {
             )}
           </section>
           <section className="glass-card panel">
+            <h2>Riwayat pembayaran</h2>
+            {history.length === 0 ? (
+              <p className="hint">Belum ada pembayaran.</p>
+            ) : (
+              <ul className="pay-history">
+                {history.slice(0, 5).map(p => (
+                  <li key={p.id}>
+                    <div>
+                      <strong>{formatRupiah(p.amount)}</strong>
+                      <span>{p.method || 'Pembayaran'}</span>
+                    </div>
+                    <span className={`pay-status ${p.status}`}>{paymentStatusLabel(p.status)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+          <section className="glass-card panel">
             <h2>Mulai berlatih</h2>
             <div className="quick-actions">
               <Link className="btn btn-primary" to="/tryouts">Pilih tryout</Link>
@@ -93,7 +199,16 @@ export default function Profile() {
         </div>
       </div>
 
-      <UpgradeModal open={modal} onClose={() => setModal(false)} onPaid={async () => { await refreshUser(); setModal(false) }} />
+      {modal && (
+        <UpgradeModal
+          onClose={() => setModal(false)}
+          onPaid={async () => {
+            await refreshUser()
+            await loadPayments()
+            setModal(false)
+          }}
+        />
+      )}
     </div>
   )
 }

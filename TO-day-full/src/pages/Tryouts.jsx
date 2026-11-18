@@ -64,7 +64,7 @@ export default function Tryouts() {
         </div>
       )}
 
-      <UpgradeModal open={modal} onClose={() => setModal(false)} onPaid={async () => { await refreshUser(); setModal(false) }} />
+      {modal && <UpgradeModal onClose={() => setModal(false)} onPaid={async () => { await refreshUser(); setModal(false) }} />}
     </div>
   )
 }

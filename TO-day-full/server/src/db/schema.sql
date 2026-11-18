@@ -66,14 +66,14 @@ CREATE TABLE IF NOT EXISTS question_reports (
 );
 
 -- Transaksi pembayaran. status: pending -> paid/failed.
--- provider_ref menyimpan id transaksi dari payment gateway (kosong di mode simulasi).
+-- provider_ref menyimpan order_id dari Midtrans (dipakai untuk mencocokkan webhook).
 CREATE TABLE IF NOT EXISTS payments (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   amount INTEGER NOT NULL CHECK (amount >= 0),
-  method TEXT NOT NULL,               -- 'QRIS' | 'GoPay' | 'Transfer Bank'
+  method TEXT NOT NULL,               -- metode yang dipilih user (informatif; Midtrans Snap menampilkan semua)
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'failed')),
-  provider TEXT NOT NULL DEFAULT 'simulated', -- 'simulated' | 'midtrans' | 'xendit' dst
+  provider TEXT NOT NULL DEFAULT 'midtrans',
   provider_ref TEXT,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   paid_at TIMESTAMP
@@ -82,3 +82,14 @@ CREATE TABLE IF NOT EXISTS payments (
 CREATE INDEX IF NOT EXISTS idx_attempts_user ON attempts(user_id);
 CREATE INDEX IF NOT EXISTS idx_attempts_tryout ON attempts(tryout_id);
 CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
+
+-- order_id Midtrans harus unik supaya webhook bisa memetakan notifikasi ke
+-- transaksi yang tepat.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_provider_ref
+  ON payments(provider_ref) WHERE provider_ref IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
+
+-- Catatan admin saat menyetujui/menolak pembayaran manual. ALTER dipakai agar
+-- database yang sudah ada ikut mendapat kolom ini.
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS admin_note TEXT;

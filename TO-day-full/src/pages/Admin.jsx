@@ -1,0 +1,241 @@
+import { useCallback, useEffect, useState } from 'react'
+import { approvePayment, getAdminPayments, rejectPayment } from '../api/payments'
+import { apiErrorMessage } from '../api/client'
+import './pages.css'
+
+const TOKEN_KEY = 'tod_admin_token'
+
+function formatRupiah(value) {
+  return `Rp ${Number(value).toLocaleString('id-ID')}`
+}
+
+function formatDate(value) {
+  if (!value) return '-'
+  return new Date(value).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
+}
+
+// Halaman verifikasi pembayaran manual. Token dimasukkan saat runtime dan
+// tidak pernah di-hardcode. API tetap menolak tanpa token yang benar.
+export default function Admin() {
+  const [token, setToken] = useState(() => sessionStorage.getItem(TOKEN_KEY) || '')
+  const [input, setInput] = useState('')
+  const [authed, setAuthed] = useState(false)
+  const [payments, setPayments] = useState([])
+  const [status, setStatus] = useState('pending')
+  const [loading, setLoading] = useState(false)
+  const [busyId, setBusyId] = useState(null)
+  const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
+  const [notes, setNotes] = useState({})
+
+  const load = useCallback(async (tok, filter) => {
+    setLoading(true)
+    setError('')
+    try {
+      const data = await getAdminPayments(tok, filter)
+      setPayments(data.payments || [])
+      setAuthed(true)
+      sessionStorage.setItem(TOKEN_KEY, tok)
+      return true
+    } catch (err) {
+      setAuthed(false)
+      setError(apiErrorMessage(err, 'Gagal memuat data admin.'))
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!token) return
+    const timer = setTimeout(() => { load(token, status) }, 0)
+    return () => clearTimeout(timer)
+  }, [token, status, load])
+
+  useEffect(() => {
+    if (!authed) return
+    const timer = setInterval(() => { load(token, status) }, 30000)
+    return () => clearInterval(timer)
+  }, [authed, token, status, load])
+
+  const login = async (e) => {
+    e.preventDefault()
+    const value = input.trim()
+    if (!value) return
+    setMessage('')
+    const ok = await load(value, status)
+    if (ok) {
+      setToken(value)
+      setInput('')
+    }
+  }
+
+  const logout = () => {
+    sessionStorage.removeItem(TOKEN_KEY)
+    setToken('')
+    setAuthed(false)
+    setPayments([])
+    setMessage('')
+    setError('')
+  }
+
+  const act = async (payment, kind) => {
+    if (kind === 'approve') {
+      const ok = window.confirm(
+        `Setujui pembayaran ${payment.order_id || `#${payment.id}`} sebesar ${formatRupiah(payment.amount)}?\n\nPastikan dana QRIS benar-benar sudah masuk.`
+      )
+      if (!ok) return
+    }
+
+    setBusyId(payment.id)
+    setError('')
+    setMessage('')
+    try {
+      const note = notes[payment.id] || ''
+      if (kind === 'approve') await approvePayment(payment.id, token, note)
+      else await rejectPayment(payment.id, token, note)
+
+      setMessage(
+        kind === 'approve'
+          ? `Pembayaran ${payment.order_id || `#${payment.id}`} disetujui. Premium diaktifkan 1 bulan.`
+          : `Pembayaran ${payment.order_id || `#${payment.id}`} ditolak.`
+      )
+      await load(token, status)
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Aksi gagal. Coba lagi.'))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  if (!authed) {
+    return (
+      <div className="admin-wrap">
+        <div className="page-head">
+          <h1>Admin TO-Day</h1>
+          <p>Masukkan token admin untuk memverifikasi pembayaran manual QRIS.</p>
+        </div>
+        <form className="glass-card panel admin-gate" onSubmit={login}>
+          <label htmlFor="admin-token">Token admin</label>
+          <input
+            id="admin-token"
+            type="password"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            placeholder="ADMIN_TOKEN"
+            autoComplete="current-password"
+          />
+          {error && <div className="error" role="alert" style={{ marginTop: 12 }}>{error}</div>}
+          <div className="form-actions">
+            <button className="btn btn-primary" type="submit" disabled={loading}>
+              {loading ? 'Memeriksa...' : 'Masuk'}
+            </button>
+          </div>
+        </form>
+      </div>
+    )
+  }
+
+  return (
+    <div className="admin-wrap">
+      <div className="page-head">
+        <h1>Verifikasi Pembayaran</h1>
+        <p>Setujui hanya setelah dana QRIS benar-benar masuk ke rekening Anda.</p>
+      </div>
+
+      <div className="glass-card panel">
+        <div className="admin-toolbar">
+          <div className="tabs" style={{ margin: 0 }}>
+            {['pending', 'paid', 'failed'].map(s => (
+              <button
+                key={s}
+                type="button"
+                className={`tab ${status === s ? 'on' : ''}`}
+                onClick={() => setStatus(s)}
+              >
+                {s === 'pending' ? 'Menunggu' : s === 'paid' ? 'Disetujui' : 'Ditolak'}
+              </button>
+            ))}
+          </div>
+          <div className="admin-actions">
+            <button className="btn btn-glass" onClick={() => load(token, status)} disabled={loading}>
+              {loading ? 'Memuat...' : 'Muat ulang'}
+            </button>
+            <button className="btn btn-glass" onClick={logout}>Keluar admin</button>
+          </div>
+        </div>
+
+        {message && <div className="saved" role="status" style={{ marginBottom: 12 }}>{message}</div>}
+        {error && <div className="error" role="alert">{error}</div>}
+
+        {payments.length === 0 ? (
+          <p className="admin-empty">{loading ? 'Memuat data...' : 'Tidak ada transaksi pada status ini.'}</p>
+        ) : (
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Order</th>
+                  <th>Pembeli</th>
+                  <th>Nominal</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map(p => (
+                  <tr key={p.id}>
+                    <td>
+                      <strong>{p.order_id || `#${p.id}`}</strong>
+                      <span className="muted">{formatDate(p.created_at)}</span>
+                      <span className="muted">{p.method}</span>
+                    </td>
+                    <td>
+                      {p.name}
+                      <span className="muted">{p.email}</span>
+                    </td>
+                    <td>{formatRupiah(p.amount)}</td>
+                    <td>
+                      {p.status === 'pending' ? (
+                        <>
+                          <input
+                            className="admin-note"
+                            placeholder="Catatan (opsional)"
+                            value={notes[p.id] || ''}
+                            onChange={e => setNotes(prev => ({ ...prev, [p.id]: e.target.value }))}
+                          />
+                          <div className="admin-actions" style={{ marginTop: 8 }}>
+                            <button
+                              type="button"
+                              className="btn btn-primary"
+                              disabled={busyId === p.id}
+                              onClick={() => act(p, 'approve')}
+                            >
+                              {busyId === p.id ? 'Memproses...' : 'Setujui'}
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-glass"
+                              disabled={busyId === p.id}
+                              onClick={() => act(p, 'reject')}
+                            >
+                              Tolak
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <span className={`pay-status ${p.status}`}>
+                          {p.status === 'paid' ? 'Disetujui' : 'Ditolak'}
+                        </span>
+                      )}
+                      {p.admin_note && <span className="muted">Catatan: {p.admin_note}</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

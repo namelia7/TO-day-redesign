@@ -181,6 +181,35 @@ label { display: block; font-weight: 600; font-size: 14px; margin: 14px 0 6px; }
 .plan { display: inline-block; padding: 6px 16px; border-radius: 999px; background: var(--field); font-weight: 700; margin-bottom: 10px; }
 .plan-on { background: linear-gradient(120deg, var(--primary-soft), #d8f4ee); color: var(--primary-dark); }
 
+/* Pembayaran manual / QRIS via WhatsApp */
+.pending-banner { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 18px 22px; margin-bottom: 14px; border-left: 4px solid #e0a43a; }
+.pending-banner strong { font-size: 15px; }
+.pending-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.pay-msg { margin: -4px 0 14px; }
+.pay-history { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.pay-history li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--field-border); }
+.pay-history li:last-child { border-bottom: 0; padding-bottom: 0; }
+.pay-history div { display: flex; flex-direction: column; gap: 2px; }
+.pay-history strong { font-size: 14.5px; }
+.pay-history div span { font-size: 13px; color: var(--muted); }
+.pay-status { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--field); color: var(--muted); white-space: nowrap; }
+.pay-status.paid { background: #dcf3e6; color: #2f8f5b; }
+.pay-status.pending { background: #fdf1cf; color: #a67c14; }
+.pay-status.failed { background: #fde3e8; color: #a4243b; }
+
+/* Halaman admin */
+.admin-wrap { max-width: 1000px; margin: 0 auto; padding: 20px 20px 60px; }
+.admin-gate { max-width: 420px; margin: 40px auto; }
+.admin-table-wrap { overflow-x: auto; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.admin-table th, .admin-table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--field-border); vertical-align: top; }
+.admin-table th { color: var(--muted); font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.03em; }
+.admin-table td .muted { color: var(--muted); font-size: 12.5px; display: block; }
+.admin-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.admin-note { width: 100%; margin-top: 8px; }
+.admin-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.admin-empty { color: var(--muted); text-align: center; padding: 24px 0; }
+
 /* Tabs */
 .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
 .tab { padding: 9px 16px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,0.65); color: var(--muted); cursor: pointer; font-weight: 600; }

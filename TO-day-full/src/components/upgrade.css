@@ -11,4 +11,17 @@
 .method-list { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
 .method { padding: 9px 16px; border-radius: 12px; border: 1px solid var(--field-border); background: var(--field); cursor: pointer; font-weight: 600; font-size: 14px; }
 .method.on { background: var(--primary); color: #fff; border-color: transparent; }
+.method-list.info .method { cursor: default; font-size: 13px; padding: 7px 13px; }
 .upgrade-note { font-size: 12.5px; font-style: italic; }
+.upgrade-info { margin-top: 10px; font-size: 13px; color: var(--primary-dark); }
+.upgrade-modal .tabs { margin: 4px 0 14px; }
+.upgrade-modal .modal-actions { flex-wrap: wrap; }
+
+/* Pembayaran manual QRIS via WhatsApp */
+.qr-flow { margin-top: 4px; }
+.qr-steps { margin: 0 0 12px; padding-left: 20px; display: grid; gap: 6px; color: var(--muted); font-size: 14px; }
+.qr-steps strong { color: var(--ink); }
+.order-box { background: var(--field); border: 1px solid var(--field-border); border-radius: 16px; padding: 14px 16px; margin: 6px 0 10px; }
+.order-row { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; padding: 3px 0; }
+.order-row span { color: var(--muted); }
+.order-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 6px; }

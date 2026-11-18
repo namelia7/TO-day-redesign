@@ -2,6 +2,7 @@
 // Soal di sini SAMA PERSIS dengan 8 soal yang ada di versi demo React
 // (src/data/mockQuestions.js) -- bukan soal UTBK resmi, hanya contoh latihan.
 import 'dotenv/config'
+import { pathToFileURL } from 'node:url'
 import bcrypt from 'bcryptjs'
 import { pool } from './index.js'
 
@@ -37,7 +38,7 @@ function questionsForTryout(t) {
   return QUESTIONS // tryout tipe 'utbk' memakai semua soal (demo)
 }
 
-async function run() {
+async function seed() {
   for (const [code, name] of SUBTESTS) {
     await pool.query(
       'INSERT INTO subtests (code, name) VALUES ($1, $2) ON CONFLICT (code) DO NOTHING',
@@ -70,6 +71,14 @@ async function run() {
   }
 
   // Akun demo, sama seperti versi demo: johndoe@gmail.com / pass1234
+  // Jangan dibuat di produksi karena password-nya publik.
+  const skipDemoUser = process.env.NODE_ENV === 'production' || process.env.SKIP_DEMO_USER === 'true'
+  if (skipDemoUser) {
+    console.log('Akun demo dilewati (produksi / SKIP_DEMO_USER=true).')
+    console.log('Seed selesai.')
+    return
+  }
+
   const existing = await pool.query('SELECT id FROM users WHERE email = $1', ['johndoe@gmail.com'])
   if (existing.rowCount === 0) {
     const hash = await bcrypt.hash('pass1234', 10)
@@ -86,9 +95,14 @@ async function run() {
   console.log('Seed selesai.')
 }
 
-run()
-  .catch(err => {
-    console.error(err)
-    process.exitCode = 1
-  })
-  .finally(() => pool.end())
+export { seed }
+
+// Jalankan sebagai script (`npm run seed`), bukan saat di-import server.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  seed()
+    .catch(err => {
+      console.error(err)
+      process.exitCode = 1
+    })
+    .finally(() => pool.end())
+}

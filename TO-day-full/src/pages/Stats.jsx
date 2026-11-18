@@ -133,7 +133,7 @@ export default function Stats() {
           )}
         </section>
       </div>
-      <UpgradeModal open={modal} onClose={() => setModal(false)} onPaid={onPaid} />
+      {modal && <UpgradeModal onClose={() => setModal(false)} onPaid={onPaid} />}
     </div>
   )
 }

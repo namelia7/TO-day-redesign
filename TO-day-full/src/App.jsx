@@ -9,6 +9,7 @@ import Tryouts from './pages/Tryouts'
 import CBT from './pages/CBT'
 import Results from './pages/Results'
 import Stats from './pages/Stats'
+import Admin from './pages/Admin'
 import { useAuth } from './context/useAuth'
 
 function PrivateRoute({ children }) {
@@ -38,6 +39,7 @@ function App() {
           <Route path="/tryouts/:id" element={<PrivateRoute><CBT /></PrivateRoute>} />
           <Route path="/results" element={<PrivateRoute><Results /></PrivateRoute>} />
           <Route path="/stats" element={<PrivateRoute><Stats /></PrivateRoute>} />
+          <Route path="/admin" element={<Admin />} />
         </Routes>
       </main>
 
